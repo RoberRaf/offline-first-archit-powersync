@@ -106,6 +106,11 @@ Flutter writes locally (optimistic)
   → Automatic rollback of the local SQLite row
 ```
 
+> **Note — Sync rules vs. conflict resolution**
+> Sync rules (the YAML deployed to the PowerSync dashboard) are solely concerned with *data routing*: they define which rows each client receives. They play no part in resolving conflicts.
+> Conflict resolution is the responsibility of the **backend**. When a client uploads a change, the Laravel API can inspect the incoming payload, compare it against the current server state, and decide whether to accept, reject, or merge the change (returning an appropriate HTTP status code such as 409 to signal a conflict).
+> By default — if the backend applies no additional logic — the outcome is **last-write-wins**: whichever upload reaches the server last overwrites the previous value.
+
 ---
 
 ## Test Results
