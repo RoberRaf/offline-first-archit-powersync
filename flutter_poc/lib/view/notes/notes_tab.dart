@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_poc/di.dart';
 import 'package:flutter_poc/models/note.dart';
 import 'package:flutter_poc/services/database_service.dart';
-import 'package:flutter_poc/view/notes/notes_data_source.dart';
-import 'package:syncfusion_flutter_datagrid/datagrid.dart';
+import 'package:intl/intl.dart';
 
 class NotesTab extends StatefulWidget {
   const NotesTab({super.key});
@@ -37,6 +36,10 @@ class _NotesTabState extends State<NotesTab> {
       return Note(id: '', title: 'Note #$n', content: 'Auto-generated content for note $n.');
     });
     await di<DatabaseService>().bulkInsert(models);
+  }
+
+  Future<void> _deleteNote(Note note) async {
+    await di<DatabaseService>().delete(note);
   }
 
   Future<void> _showEditNoteDialog(Note note) async {
@@ -112,62 +115,61 @@ class _NotesTabState extends State<NotesTab> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: SfDataGrid(
-                  source: NotesDataSource(notes: snapshot.data!, onEdit: _showEditNoteDialog),
-                  columnWidthMode: ColumnWidthMode.auto,
-                  columns: [
-                    GridColumn(
-                      columnName: 'index',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('#'),
-                      ),
+              if (snapshot.data?.isNotEmpty != true)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      'No notes yet. Tap "Add Note" to create one.',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
-                    GridColumn(
-                      columnName: 'id',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('ID'),
-                      ),
-                    ),
-                    GridColumn(
-                      columnName: 'title',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Title'),
-                      ),
-                    ),
-                    GridColumn(
-                      columnName: 'content',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Content'),
-                      ),
-                    ),
-                    GridColumn(
-                      columnName: 'created_at',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Created At'),
-                      ),
-                    ),
-                    GridColumn(
-                      columnName: 'actions',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Actions'),
-                      ),
-                    ),
-                  ],
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: snapshot.data!.length,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    itemBuilder: (context, index) {
+                      final note = snapshot.data![index];
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(note.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    const SizedBox(height: 4),
+                                    Text(note.content, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      note.updatedAt != null
+                                          ? DateFormat('d MMM, h:mm a').format(note.updatedAt!)
+                                          : '—',
+                                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                                onPressed: () => _showEditNoteDialog(note),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteNote(note),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Row(

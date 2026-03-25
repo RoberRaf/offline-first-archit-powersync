@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_poc/di.dart';
 import 'package:flutter_poc/models/video.dart';
 import 'package:flutter_poc/services/database_service.dart';
-import 'package:flutter_poc/view/videos/videos_data_source.dart';
-import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 class VideosTab extends StatefulWidget {
   const VideosTab({super.key});
@@ -16,8 +14,6 @@ class VideosTab extends StatefulWidget {
 
 class _VideosTabState extends State<VideosTab> {
   late final Stream<List<Video>> _stream;
-  final nameCtrl = TextEditingController();
-  final offsetCtrl = TextEditingController();
   final _random = Random();
 
   @override
@@ -28,90 +24,34 @@ class _VideosTabState extends State<VideosTab> {
 
   Future<void> _addVideo() async {
     final n = _random.nextInt(900) + 100;
-    final video = Video(id: '', name: 'Video #$n', offset: _random.nextInt(300), isCompleted: _random.nextBool());
+    final offset = _random.nextInt(100);
+    final video = Video(id: '', name: 'Video #$n', offset: offset, isCompleted: offset >= 100);
     await di<DatabaseService>().insert(video);
   }
 
   Future<void> _add100Videos() async {
-    final models = List.generate(
-      100,
-      (i) => Video(
-        id: '',
-        name: 'Video #${_random.nextInt(9000) + 1000}',
-        offset: _random.nextInt(300),
-        isCompleted: _random.nextBool(),
-      ),
-    );
+    final models = List.generate(100, (i) {
+      final offset = _random.nextInt(100);
+      return Video(id: '', name: 'Video #${_random.nextInt(9000) + 1000}', offset: offset, isCompleted: offset >= 100);
+    });
     await di<DatabaseService>().bulkInsert(models);
   }
 
-  Future<void> _showEditVideoDialog(Video video) async {
-    nameCtrl.text = video.name;
-    offsetCtrl.text = video.offset.toString();
-    bool isCompleted = video.isCompleted;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Edit Video'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: offsetCtrl,
-                decoration: const InputDecoration(labelText: 'Offset'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Text('Completed'),
-                  const Spacer(),
-                  Switch(value: isCompleted, onChanged: (val) => setDialogState(() => isCompleted = val)),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+  Future<void> _updateOffset(Video video, int newOffset) async {
+    await di<DatabaseService>().update(
+      Video(
+        id: video.id,
+        name: video.name,
+        offset: newOffset,
+        isCompleted: video.isCompleted || newOffset >= 100,
+        createdAt: video.createdAt,
+        updatedAt: video.updatedAt,
       ),
     );
-
-    if (confirmed == true) {
-      await di<DatabaseService>().update(
-        Video(
-          id: video.id,
-          name: nameCtrl.text.trim(),
-          offset: int.tryParse(offsetCtrl.text.trim()) ?? video.offset,
-          isCompleted: isCompleted,
-          createdAt: video.createdAt,
-          updatedAt: video.updatedAt,
-        ),
-      );
-    }
-
-    nameCtrl.clear();
-    offsetCtrl.clear();
   }
 
-@override
-  void dispose() {
-    nameCtrl.dispose();
-    offsetCtrl.dispose();
-    super.dispose();
+  Future<void> _deleteVideo(Video video) async {
+    await di<DatabaseService>().delete(video);
   }
 
   @override
@@ -122,105 +62,114 @@ class _VideosTabState extends State<VideosTab> {
         stream: _stream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          return Column(
-            children: [
-              Expanded(
-                child: SfDataGrid(
-                  source: VideosDataSource(videos: snapshot.data!, onEdit: _showEditVideoDialog),
-                  columnWidthMode: ColumnWidthMode.auto,
-                  columns: [
-                    GridColumn(
-                      columnName: 'index',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('#'),
-                      ),
-                    ),
-                    // GridColumn(
-                    //   columnName: 'id',
-                    //   label: Container(padding: const EdgeInsets.all(8.0), alignment: Alignment.center, child: const Text('ID')),
-                    // ),
-                    GridColumn(
-                      columnName: 'name',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Name'),
-                      ),
-                    ),
-                    GridColumn(
-                      columnName: 'offset',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Offset'),
-                      ),
-                    ),
-                    GridColumn(
-                      columnName: 'is_completed',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Completed'),
-                      ),
-                    ),
-                    GridColumn(
-                      columnName: 'created_at',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Created At'),
-                      ),
-                    ),
-                    GridColumn(
-                      columnName: 'actions',
-                      label: Container(
-                        padding: const EdgeInsets.all(8.0),
-                        alignment: Alignment.center,
-                        child: const Text('Actions'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _addVideo,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                        textStyle: const TextStyle(fontSize: 16.0),
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Add Video'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: _add100Videos,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                        textStyle: const TextStyle(fontSize: 16.0),
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Add 100'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          final videos = snapshot.data!;
+          if (videos.isEmpty) {
+            return const Center(child: Text('No videos yet. Tap + to add one.'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: videos.length,
+            itemBuilder: (context, index) => _VideoCard(
+              video: videos[index],
+              onOffsetChanged: (val) => _updateOffset(videos[index], val),
+              onDelete: () => _deleteVideo(videos[index]),
+            ),
           );
         },
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _addVideo,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Video'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              onPressed: _add100Videos,
+              icon: const Icon(Icons.playlist_add),
+              label: const Text('Add 100'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VideoCard extends StatelessWidget {
+  final Video video;
+  final ValueChanged<int> onOffsetChanged;
+  final VoidCallback onDelete;
+
+  const _VideoCard({required this.video, required this.onOffsetChanged, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final offsetPercent = video.offset.clamp(0, 100);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.play_circle_fill, color: video.isCompleted ? Colors.green : Colors.deepPurple, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(video.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
+                if (video.isCompleted) const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: onDelete,
+                  tooltip: 'Delete',
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Text('Offset', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                const Spacer(),
+                Text('$offsetPercent%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ],
+            ),
+            Slider(
+              value: offsetPercent.toDouble(),
+              min: 0,
+              max: 100,
+              divisions: 100,
+              activeColor: Colors.deepPurple,
+              label: '$offsetPercent%',
+              onChanged: (val) => onOffsetChanged(val.round()),
+            ),
+            Row(
+              children: [
+                const Text('Completed', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                const Spacer(),
+                AbsorbPointer(
+                  child: Switch(value: video.isCompleted, activeColor: Colors.deepPurple, onChanged: (c) {}),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

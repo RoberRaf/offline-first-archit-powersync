@@ -12,9 +12,9 @@ class LaravelConnector extends PowerSyncBackendConnector {
   Future<PowerSyncCredentials?> fetchCredentials() async {
     // Dev token from PowerSync dashboard
     return PowerSyncCredentials(
-      endpoint: 'https://xxxxxxx.powersync.journeyapps.com',
+      endpoint: 'https://699d974aed1fcd0efe52dc12.powersync.journeyapps.com',
       token:
-          'TOKEN_FROM_POWERSYNC_DASHBOARD',
+          'eyJhbGciOiJSUzI1NiIsImtpZCI6InBvd2Vyc3luYy1kZXYtMzIyM2Q0ZTMifQ.eyJzdWIiOiJ0ZXN0IiwiaWF0IjoxNzc0NDU5MzY1LCJpc3MiOiJodHRwczovL3Bvd2Vyc3luYy1hcGkuam91cm5leWFwcHMuY29tIiwiYXVkIjoiaHR0cHM6Ly82OTlkOTc0YWVkMWZjZDBlZmU1MmRjMTIucG93ZXJzeW5jLmpvdXJuZXlhcHBzLmNvbSIsImV4cCI6MTc3NDUwMjU2NX0.PQwCCmuL3BxEm7ryJZ2eVmo2msszEb_Hu4wtFancP5V1xbWhVv9fcCIMjyzK04HwBJvicmkhhbWbZteX-R2WKXB-g46HGpErDwti0LSt01uOGZVh1z0EBOlPtYhonqIS3TGgYgnwrL126ZbYgAyi2chKRNAIONrjtknSvJGZtUQUj0b2OQZONa9T0KHysOArgVKRF6YTn99dIOdJ67_a5x29ckhxCUKEtvL_xzUDVhbrFgRe20t9J3XiJY6R3X0SQ0RXuu9OJM-wPixerKggG_kvf_PKA4J7jVSjxgLGsghCjtYiSPVGDwSpniqELv5Z-EJ9WMaGs5mubNnWGfiiXQ',
     );
   }
 
